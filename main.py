@@ -67,46 +67,46 @@ class Island:
     def get_best_fitness(self):
         return self.hof[0].fitness
 
+def unit_vector(vector):
+    return vector / np.linalg.norm(vector)
 
-def are_similar(A, B, epsilon):
-    corr_matrix = np.corrcoef(A, B)
-    return abs(corr_matrix[1,0]) < epsilon
+def angle_between(v1, v2):
+    if sum(v1) == 0 or sum(v2) == 0:
+        return 0.
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+
+def are_similar(v1, v2, epsilon):
+    angle = angle_between(v1,v2)
+    return angle/np.pi < epsilon
 
 if __name__ == "__main__":
-    island1 = Island()
-    island2 = Island()
-    island3 = Island()
 
     max_iter = 500
-    epsilon = 0.001
+    epsilon = 0.1
+    islands_count = 4
+    islands = [Island() for i in range(islands_count)]
+    restart_probability = 0.2
+    for it in range(max_iter):
+        for island in islands:
+            island.evolution_step()
 
-    for i in range(max_iter):
-        island1.evolution_step()
-        island2.evolution_step()
-        island3.evolution_step()
-
-        if i%10 == 0 and are_similar(island1.get_best_individual(), island2.get_best_individual(), epsilon):
-            island2.restart_population()
-
-        if i%10 == 5 and are_similar(island2.get_best_individual(), island3.get_best_individual(),epsilon):
-            island3.restart_population()
-
-
-
-
-    gen, avg1, min_1, max_1 = island1.get_results()
-    gen, avg2, min_2, max_2 = island2.get_results()
-    gen, avg3, min_3, max_3 = island3.get_results()
+        for i in range(1, islands_count):
+            if np.random.rand() < restart_probability:
+                prev_best = islands[i-1].get_best_individual()
+                current_best = islands[i].get_best_individual()
+                if are_similar(prev_best, current_best, epsilon):
+                    islands[i].restart_population()
 
 
-    plt.plot(gen[15:], avg1[15:], label="average for island 1")
-    plt.plot(gen[15:], avg2[15:], label="average for island 2")
-    plt.plot(gen[15:], avg3[15:], label="average for island 3")
-    # plt.plot(gen, min_, label="minimum")
-    # plt.plot(gen, max_, label="maximum")
+    results = [ island.get_results() for island in islands ]
+    for i,r in enumerate(results):
+        plt.plot(r[0], r[1], label="avarage for island {}".format(i))
+
     plt.xlabel("Generation")
     plt.ylabel("Fitness")
     plt.legend(loc="upper right")
     plt.title(f"Population size: {population_size} epsilon: {epsilon}")
-    plt.savefig(f"iterations_{max_iter}_epsilon_{epsilon}_population_{population_size}_2_zoom.jpg")
-
+    plt.show()
