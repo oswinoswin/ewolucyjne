@@ -28,6 +28,7 @@ class Island:
         self.stats.register("min", np.min)
         self.stats.register("max", np.max)
         self.pop = toolbox.population(n=population_size)
+        #print(self.pop)
         self.gens = []
         self.avgs = []
         self.mins = []
@@ -50,6 +51,11 @@ class Island:
         self.mins = self.mins + min_
         self.maxs = self.maxs +max_
         self.current_generation += 1
+       
+    def estimate_position(self):
+    	mean = np.mean(self.pop, axis=0)
+    	std = np.mean(np.std(self.pop, axis=0))
+    	return mean, std
 
     def get_results(self):
         self.gens.append(self.current_generation)
@@ -81,32 +87,50 @@ def angle_between(v1, v2):
 def are_similar(v1, v2, epsilon):
     angle = angle_between(v1,v2)
     return angle/np.pi < epsilon
+    
+def islands_too_close(a, b):
+    curr_pos, curr_sd = a.estimate_position()
+    next_pos, next_sd = b.estimate_position()
+    dist = np.linalg.norm(curr_pos-next_pos)
+    if next_sd > 0 and np.random.rand() > dist/next_sd:
+        return true
+    return false
 
 if __name__ == "__main__":
 
-    max_iter = 500
-    epsilon = 0.1
-    islands_count = 4
+    max_iter = 200
+    epsilon = 0.01
+    min_sd = abs(x_max - x_min) * epsilon
+    islands_count = 10
     islands = [Island() for i in range(islands_count)]
     restart_probability = 0.2
     for it in range(max_iter):
         for island in islands:
             island.evolution_step()
 
-        for i in range(1, islands_count):
-            if np.random.rand() < restart_probability:
-                prev_best = islands[i-1].get_best_individual()
-                current_best = islands[i].get_best_individual()
-                if are_similar(prev_best, current_best, epsilon):
+        for i in range(0, islands_count):
+            mean, std = islands[i].estimate_position()
+            #print('[{}]: mean: {}'.format(i,mean))
+            #print('[{}]: std: {}'.format(i,std))
+            if std < min_sd and np.random.rand() < restart_probability:
+                islands[i].restart_population()
+            else:
+                if islands_too_close(islands[i], islands[(i+1)%islands_count]):
                     islands[i].restart_population()
+            #if np.random.rand() < restart_probability:
+            #    prev_best = islands[i-1].get_best_individual()
+            #    current_best = islands[i].get_best_individual()
+            #    if are_similar(prev_best, current_best, epsilon):
+            #        islands[i].restart_population()
 
 
     results = [ island.get_results() for island in islands ]
     for i,r in enumerate(results):
-        plt.plot(r[0], r[1], label="avarage for island {}".format(i))
+        plt.plot(r[0], r[2], label="average for island {}".format(i))
 
     plt.xlabel("Generation")
     plt.ylabel("Fitness")
+    plt.yscale("log")
     plt.legend(loc="upper right")
-    plt.title(f"Population size: {population_size} epsilon: {epsilon}")
+    plt.title('Population size: {} epsilon: {}'.format(population_size, epsilon))
     plt.show()
