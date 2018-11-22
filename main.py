@@ -4,7 +4,7 @@ from benchmark_functions import rastrigin
 import matplotlib.pyplot as plt
 import numpy as np
 
-dimension = 10
+dimension = 100
 population_size = 50
 x_min, x_max = -5.12, 5.12
 
@@ -65,7 +65,7 @@ class Island:
         return self.hof[0]
 
     def get_best_fitness(self):
-        return self.hof[0].fitness
+        return self.hof[0].fitness.values[0]
 
 def unit_vector(vector):
     return vector / np.linalg.norm(vector)
@@ -83,12 +83,11 @@ def are_similar(v1, v2, epsilon):
     return angle/np.pi < epsilon
 
 if __name__ == "__main__":
-
-    max_iter = 500
-    epsilon = 0.1
-    islands_count = 4
+    max_iter = 200
+    similarity = 0.1
+    islands_count = 30
     islands = [Island() for i in range(islands_count)]
-    restart_probability = 0.2
+    restart_probability = 0.1
     for it in range(max_iter):
         for island in islands:
             island.evolution_step()
@@ -97,7 +96,7 @@ if __name__ == "__main__":
             if np.random.rand() < restart_probability:
                 prev_best = islands[i-1].get_best_individual()
                 current_best = islands[i].get_best_individual()
-                if are_similar(prev_best, current_best, epsilon):
+                if are_similar(prev_best, current_best, similarity):
                     islands[i].restart_population()
 
 
@@ -105,8 +104,10 @@ if __name__ == "__main__":
     for i,r in enumerate(results):
         plt.plot(r[0], r[1], label="avarage for island {}".format(i))
 
+    best_results = [ island.get_best_fitness() for island in islands]
+    print(best_results)
     plt.xlabel("Generation")
     plt.ylabel("Fitness")
     plt.legend(loc="upper right")
-    plt.title(f"Population size: {population_size} epsilon: {epsilon}")
+    plt.title(f"Population size: {population_size} similarity: {similarity}")
     plt.show()
