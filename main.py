@@ -3,6 +3,8 @@ from deap import base, creator, tools, algorithms
 from benchmark_functions import rastrigin
 import matplotlib.pyplot as plt
 import numpy as np
+import argparse
+import time
 
 dimension = 100
 population_size = 50
@@ -103,18 +105,25 @@ def islands_too_close(a, b):
 
 
 if __name__ == "__main__":
+    # islands_count = 10
+    parser = argparse.ArgumentParser(description='Run experiment')
+    parser.add_argument('islands_count', default=10, type=int)
+    parser.add_argument('--show_plot', dest='show_plot', action='store_true')
 
+    args = parser.parse_args()
+    islands_count = args.islands_count
+    show_plot = args.show_plot
     max_iter = 200
     epsilon = 0.01
     min_sd = abs(x_max - x_min) * epsilon
-    islands_count = 10
 
     islands = [Island() for i in range(islands_count)]
     restart_probability = 0.1
+
+    start_time = time.perf_counter()
     for it in range(max_iter):
         for island in islands:
             island.evolution_step()
-
 
         for i in range(0, islands_count):
             mean, std = islands[i].estimate_position()
@@ -129,12 +138,15 @@ if __name__ == "__main__":
     for i, r in enumerate(results):
         plt.plot(r[0], r[2], label="average for island {}".format(i))
 
-    best_results = [ island.get_best_fitness() for island in islands]
-    print(best_results)
-    plt.xlabel("Generation")
-    plt.ylabel("Fitness")
-    plt.yscale("log")
-    plt.legend(loc="upper right")
-    plt.title('Population size: {} epsilon: {}'.format(population_size, epsilon))
-    plt.show()
+    best_result = min([ island.get_best_fitness() for island in islands])
+    duration = time.perf_counter() - start_time
+
+    print("{0},{1:.4f},{2:.4f}".format(islands_count, duration, best_result))
+    if show_plot:
+        plt.xlabel("Generation")
+        plt.ylabel("Fitness")
+        plt.yscale("log")
+        plt.legend(loc="upper right")
+        plt.title('Population size: {} epsilon: {}'.format(population_size, epsilon))
+        plt.show()
 
