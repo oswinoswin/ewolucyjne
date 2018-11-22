@@ -20,6 +20,7 @@ toolbox.register("mate", tools.cxTwoPoint)
 toolbox.register("mutate", tools.mutFlipBit, indpb=0.10)
 toolbox.register("select", tools.selTournament, tournsize=3)
 
+
 class Island:
     def __init__(self):
         self.hof = tools.HallOfFame(1)
@@ -28,6 +29,7 @@ class Island:
         self.stats.register("min", np.min)
         self.stats.register("max", np.max)
         self.pop = toolbox.population(n=population_size)
+        # print(self.pop)
         self.gens = []
         self.avgs = []
         self.mins = []
@@ -38,8 +40,9 @@ class Island:
         self.pop = toolbox.population(n=population_size)
 
     def evolution_step(self):
-        self.pop, logbook = algorithms.eaSimple(self.pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=1, stats=self.stats, halloffame=self.hof,
-                                            verbose=False)
+        self.pop, logbook = algorithms.eaSimple(self.pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=1, stats=self.stats,
+                                                halloffame=self.hof,
+                                                verbose=False)
         avg, min_, max_ = logbook.select("avg", "min", "max")
         if self.current_generation != 0:
             avg = avg[1:]
@@ -48,8 +51,13 @@ class Island:
         self.gens.append(self.current_generation)
         self.avgs = self.avgs + avg
         self.mins = self.mins + min_
-        self.maxs = self.maxs +max_
+        self.maxs = self.maxs + max_
         self.current_generation += 1
+
+    def estimate_position(self):
+        mean = np.mean(self.pop, axis=0)
+        std = np.mean(np.std(self.pop, axis=0))
+        return mean, std
 
     def get_results(self):
         self.gens.append(self.current_generation)
@@ -67,8 +75,10 @@ class Island:
     def get_best_fitness(self):
         return self.hof[0].fitness.values[0]
 
+
 def unit_vector(vector):
     return vector / np.linalg.norm(vector)
+
 
 def angle_between(v1, v2):
     if sum(v1) == 0 or sum(v2) == 0:
@@ -79,35 +89,52 @@ def angle_between(v1, v2):
 
 
 def are_similar(v1, v2, epsilon):
-    angle = angle_between(v1,v2)
-    return angle/np.pi < epsilon
+    angle = angle_between(v1, v2)
+    return angle / np.pi < epsilon
+
+
+def islands_too_close(a, b):
+    curr_pos, curr_sd = a.estimate_position()
+    next_pos, next_sd = b.estimate_position()
+    dist = np.linalg.norm(curr_pos - next_pos)
+    if next_sd > 0 and np.random.rand() > dist / next_sd:
+        return True
+    return False
+
 
 if __name__ == "__main__":
+
     max_iter = 200
-    similarity = 0.1
-    islands_count = 30
+    epsilon = 0.01
+    min_sd = abs(x_max - x_min) * epsilon
+    islands_count = 10
+
     islands = [Island() for i in range(islands_count)]
     restart_probability = 0.1
     for it in range(max_iter):
         for island in islands:
             island.evolution_step()
 
-        for i in range(1, islands_count):
-            if np.random.rand() < restart_probability:
-                prev_best = islands[i-1].get_best_individual()
-                current_best = islands[i].get_best_individual()
-                if are_similar(prev_best, current_best, similarity):
+
+        for i in range(0, islands_count):
+            mean, std = islands[i].estimate_position()
+
+            if std < min_sd and np.random.rand() < restart_probability:
+                islands[i].restart_population()
+            else:
+                if islands_too_close(islands[i], islands[(i + 1) % islands_count]):
                     islands[i].restart_population()
 
-
-    results = [ island.get_results() for island in islands ]
-    for i,r in enumerate(results):
-        plt.plot(r[0], r[1], label="avarage for island {}".format(i))
+    results = [island.get_results() for island in islands]
+    for i, r in enumerate(results):
+        plt.plot(r[0], r[2], label="average for island {}".format(i))
 
     best_results = [ island.get_best_fitness() for island in islands]
     print(best_results)
     plt.xlabel("Generation")
     plt.ylabel("Fitness")
+    plt.yscale("log")
     plt.legend(loc="upper right")
-    plt.title(f"Population size: {population_size} similarity: {similarity}")
+    plt.title('Population size: {} epsilon: {}'.format(population_size, epsilon))
     plt.show()
+
