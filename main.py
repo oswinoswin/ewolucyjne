@@ -5,6 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import time
+import logging
+import csv
+
+from island import Island
 
 dimension = 100
 population_size = 50
@@ -21,61 +25,6 @@ toolbox.register("evaluate", rastrigin)
 toolbox.register("mate", tools.cxTwoPoint)
 toolbox.register("mutate", tools.mutFlipBit, indpb=0.10)
 toolbox.register("select", tools.selTournament, tournsize=3)
-
-
-class Island:
-    def __init__(self):
-        self.hof = tools.HallOfFame(1)
-        self.stats = tools.Statistics(lambda ind: ind.fitness.values)
-        self.stats.register("avg", np.mean)
-        self.stats.register("min", np.min)
-        self.stats.register("max", np.max)
-        self.pop = toolbox.population(n=population_size)
-        # print(self.pop)
-        self.gens = []
-        self.avgs = []
-        self.mins = []
-        self.maxs = []
-        self.current_generation = 0
-
-    def restart_population(self):
-        self.pop = toolbox.population(n=population_size)
-
-    def evolution_step(self):
-        self.pop, logbook = algorithms.eaSimple(self.pop, toolbox, cxpb=0.5, mutpb=0.2, ngen=1, stats=self.stats,
-                                                halloffame=self.hof,
-                                                verbose=False)
-        avg, min_, max_ = logbook.select("avg", "min", "max")
-        if self.current_generation != 0:
-            avg = avg[1:]
-            min_ = min_[1:]
-            max_ = max_[1:]
-        self.gens.append(self.current_generation)
-        self.avgs = self.avgs + avg
-        self.mins = self.mins + min_
-        self.maxs = self.maxs + max_
-        self.current_generation += 1
-
-    def estimate_position(self):
-        mean = np.mean(self.pop, axis=0)
-        std = np.mean(np.std(self.pop, axis=0))
-        return mean, std
-
-    def get_results(self):
-        self.gens.append(self.current_generation)
-        return self.gens, self.avgs, self.mins, self.maxs
-
-    def get_hof(self):
-        return self.hof
-
-    def get_population(self):
-        return self.pop
-
-    def get_best_individual(self):
-        return self.hof[0]
-
-    def get_best_fitness(self):
-        return self.hof[0].fitness.values[0]
 
 
 def unit_vector(vector):
@@ -117,7 +66,14 @@ if __name__ == "__main__":
     epsilon = 0.01
     min_sd = abs(x_max - x_min) * epsilon
 
-    islands = [Island() for i in range(islands_count)]
+    logger = logging.getLogger("islandsLogger")
+    logger.setLevel(logging.INFO)
+    fh = logging.FileHandler("results/experiment_pop_{}_dim_{}_circle.csv".format(population_size, dimension))
+    fh.setLevel(logging.INFO)
+    logger.addHandler(fh)
+    logger.info("epoch,fitness,island")
+
+    islands = [Island(toolbox, tools, population_size, i, logger) for i in range(islands_count)]
     restart_probability = 0.1
 
     start_time = time.perf_counter()
@@ -128,25 +84,25 @@ if __name__ == "__main__":
         for i in range(0, islands_count):
             mean, std = islands[i].estimate_position()
 
-            if std < min_sd and np.random.rand() < restart_probability:
+            if std < min_sd and np.random.rand() < restart_probability and islands[i].get_population_age() > 70:
                 islands[i].restart_population()
             else:
-                if islands_too_close(islands[i], islands[(i + 1) % islands_count]):
+                if islands_too_close(islands[i], islands[(i + 1) % islands_count]) and islands[i].get_population_age() > 70:
                     islands[i].restart_population()
 
     results = [island.get_results() for island in islands]
     for i, r in enumerate(results):
         plt.plot(r[0], r[2], label="average for island {}".format(i))
 
-    best_result = min([ island.get_best_fitness() for island in islands])
+    best_result = min([island.get_best_fitness() for island in islands])
     duration = time.perf_counter() - start_time
 
     print("{0},{1:.4f},{2:.4f}".format(islands_count, duration, best_result))
-    if show_plot:
-        plt.xlabel("Generation")
-        plt.ylabel("Fitness")
-        plt.yscale("log")
-        plt.legend(loc="upper right")
-        plt.title('Population size: {} epsilon: {}'.format(population_size, epsilon))
-        plt.show()
+    # # if show_plot:
+    # plt.xlabel("Generation")
+    # plt.ylabel("Fitness")
+    # plt.yscale("log")
+    # plt.legend(loc="upper right")
+    # plt.title('Population size: {} epsilon: {}'.format(population_size, epsilon))
+    # plt.show()
 
