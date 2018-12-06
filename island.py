@@ -10,7 +10,6 @@ class Island:
         self.stats.register("min", np.min)
         self.stats.register("max", np.max)
         self.pop = toolbox.population(n=population_size)
-        # print(self.pop)
         self.toolbox = toolbox
         self.tools = tools
         self.population_size = population_size

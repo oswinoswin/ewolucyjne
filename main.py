@@ -1,12 +1,12 @@
 import random
-from deap import base, creator, tools, algorithms
+from deap import base, creator, tools
 from benchmark_functions import rastrigin
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import time
 import logging
-import csv
+
 
 from island import Island
 
@@ -73,6 +73,13 @@ if __name__ == "__main__":
     logger.addHandler(fh)
     logger.info("epoch,fitness,island")
 
+    diversity_logger = logging.getLogger("diversityLogger")
+    diversity_logger.setLevel(logging.INFO)
+    dfh = logging.FileHandler("results/experiment_pop_{}_dim_{}_circle_diversity.csv".format(population_size, dimension))
+    dfh.setLevel(logging.INFO)
+    diversity_logger.addHandler(dfh)
+    diversity_logger.info("epoch,diversity")
+
     islands = [Island(toolbox, tools, population_size, i, logger) for i in range(islands_count)]
     restart_probability = 0.1
 
@@ -89,6 +96,11 @@ if __name__ == "__main__":
             else:
                 if islands_too_close(islands[i], islands[(i + 1) % islands_count]) and islands[i].get_population_age() > 70:
                     islands[i].restart_population()
+
+        positions = [island.estimate_position()[0] for island in islands]
+        mean_position_std = np.std(positions)
+        diversity_logger.info("{}, {}".format(it, mean_position_std))
+        print(("{}, {}".format(it, mean_position_std)))
 
     results = [island.get_results() for island in islands]
     for i, r in enumerate(results):

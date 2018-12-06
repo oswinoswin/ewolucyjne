@@ -14,9 +14,9 @@
 ## Specyfikacja partycji
 #SBATCH -p plgrid-testing
 ## Plik ze standardowym wyjściem
-#SBATCH --output="task_output.out"
+#SBATCH --output="ewolution_output.out"
 ## Plik ze standardowym wyjściem błędów
-#SBATCH --error="task_error.err"
+#SBATCH --error="ewolution_error.err"
 
 
 ## Zaladowanie modulu IntelMPI w wersji domyslnej
