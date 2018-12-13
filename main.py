@@ -1,7 +1,6 @@
 import random
 from deap import base, creator, tools
 from benchmark_functions import rastrigin
-import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import time
@@ -10,7 +9,7 @@ import logging
 
 from island import Island
 
-dimension = 100
+dimension = 30
 population_size = 50
 x_min, x_max = -5.12, 5.12
 
@@ -25,23 +24,6 @@ toolbox.register("evaluate", rastrigin)
 toolbox.register("mate", tools.cxTwoPoint)
 toolbox.register("mutate", tools.mutFlipBit, indpb=0.10)
 toolbox.register("select", tools.selTournament, tournsize=3)
-
-
-def unit_vector(vector):
-    return vector / np.linalg.norm(vector)
-
-
-def angle_between(v1, v2):
-    if sum(v1) == 0 or sum(v2) == 0:
-        return 0.
-    v1_u = unit_vector(v1)
-    v2_u = unit_vector(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
-
-
-def are_similar(v1, v2, epsilon):
-    angle = angle_between(v1, v2)
-    return angle / np.pi < epsilon
 
 
 def islands_too_close(a, b):
@@ -61,71 +43,50 @@ def make_connection_between_islands(a, b):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
     parser.add_argument('islands_count', default=10, type=int)
-    parser.add_argument('--show_plot', dest='show_plot', action='store_true')
 
     args = parser.parse_args()
     islands_count = args.islands_count
-    show_plot = args.show_plot
-    max_iter = 200
-    epsilon = 0.01
-    min_sd = abs(x_max - x_min) * epsilon
-    restart_probability = 0.1
+    max_iter = 700
+    min_time_between_restarts = 30
+    message_sending_probability = 0.3
+    default_ttl = 5
+    min_angle = np.pi/4
+    experiment_repetitions = 5
 
-    logger = logging.getLogger("islandsLogger")
-    logger.setLevel(logging.INFO)
-    fh = logging.FileHandler("results/experiment_pop_{}_dim_{}_circle.csv".format(population_size, dimension))
-    fh.setLevel(logging.INFO)
-    logger.addHandler(fh)
-    logger.info("epoch,fitness,island")
+    print("islands: {} epochs: {}, min_time_between_restarts: {}\n"
+          "message_sending_probability: {}, message_ttl: {}, similarity: {}".format(islands_count, max_iter, min_time_between_restarts, message_sending_probability, default_ttl,min_angle))
 
     diversity_logger = logging.getLogger("diversityLogger")
     diversity_logger.setLevel(logging.INFO)
-    dfh = logging.FileHandler("results/experiment_pop_{}_dim_{}_circle_diversity.csv".format(population_size, dimension))
+    dfh = logging.FileHandler("results/diversity.csv")
     dfh.setLevel(logging.INFO)
     diversity_logger.addHandler(dfh)
     diversity_logger.info("epoch,diversity")
 
-    islands = [Island(toolbox, tools, population_size, i, logger) for i in range(islands_count)]
-    controlIsland = Island(toolbox, tools, population_size, -1, logger) # normal evolution here
+    islands = [Island(toolbox, tools, population_size, i, min_time_between_restarts, message_sending_probability, default_ttl, min_angle) for i in range(islands_count)]
+    controlIsland = Island(toolbox, tools, population_size, -1, min_time_between_restarts, message_sending_probability, default_ttl, min_angle)  # normal evolution here
 
     ## set up a topology
     for i in range(islands_count -1):
         make_connection_between_islands(islands[i], islands[i+1])
     make_connection_between_islands(islands[0], islands[-1])
 
-    start_time = time.perf_counter()
-    for it in range(max_iter):
-        controlIsland.evolution_step()
-        for island in islands:
-            island.evolution_step()
+    for rep in range(experiment_repetitions):
+        start_time = time.perf_counter()
+        for it in range(max_iter):
+            controlIsland.evolution_step()
+            for island in islands:
+                island.evolution_step()
+                # checking for stuff is in island
 
-        for i in range(0, islands_count):
-            mean, std = islands[i].estimate_position()
+            positions = [island.estimate_position()[0] for island in islands]
+            mean_position_std = np.std(positions)
+            diversity_logger.info("{}, {}".format(it, mean_position_std))
+            print(("{}, {}".format(it, mean_position_std)))
 
-            if std < min_sd and np.random.rand() < restart_probability and islands[i].get_population_age() > 70:
-                islands[i].restart_population()
-            else:
-                if islands_too_close(islands[i], islands[(i + 1) % islands_count]) and islands[i].get_population_age() > 70:
-                    islands[i].restart_population()
+        results = [island.get_results() for island in islands]
 
-        positions = [island.estimate_position()[0] for island in islands]
-        mean_position_std = np.std(positions)
-        diversity_logger.info("{}, {}".format(it, mean_position_std))
-        print(("{}, {}".format(it, mean_position_std)))
+        best_result = min([island.get_avg_fitness() for island in islands])
+        duration = time.perf_counter() - start_time
 
-    results = [island.get_results() for island in islands]
-    for i, r in enumerate(results):
-        plt.plot(r[0], r[2], label="average for island {}".format(i))
-
-    best_result = min([island.get_best_fitness() for island in islands])
-    duration = time.perf_counter() - start_time
-
-    print("{0},{1:.4f},{2:.4f}".format(islands_count, duration, best_result))
-    # # if show_plot:
-    # plt.xlabel("Generation")
-    # plt.ylabel("Fitness")
-    # plt.yscale("log")
-    # plt.legend(loc="upper right")
-    # plt.title('Population size: {} epsilon: {}'.format(population_size, epsilon))
-    # plt.show()
-
+        print("{0},{1:.4f},{2:.4f}".format(islands_count, duration, best_result))
