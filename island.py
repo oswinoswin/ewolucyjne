@@ -2,6 +2,15 @@ import numpy as np
 from deap import algorithms
 
 
+class Message:
+    def __init__(self, source, epoch, fitness, position, diversity):
+        self.source = source
+        self.epoch = epoch
+        self.fitness = fitness
+        self.position = position
+        self.diversity = diversity
+
+
 class Island:
     def __init__(self, toolbox, tools, population_size, id, logger):
         self.hof = tools.HallOfFame(1)
