@@ -21,6 +21,7 @@ class Island:
         self.last_restart_time = 0
         self.id = id
         self.logger = logger
+        self.neighbours = []
 
     def restart_population(self):
         self.pop = self.toolbox.population(n=self.population_size)
@@ -64,3 +65,6 @@ class Island:
 
     def get_population_age(self):
         return self.current_generation - self.last_restart_time
+
+    def add_neighbour(self, neighbour):
+        self.neighbours.append(neighbour)

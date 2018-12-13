@@ -53,8 +53,12 @@ def islands_too_close(a, b):
     return False
 
 
+def make_connection_between_islands(a, b):
+    a.add_neighbour(b)
+    b.add_neighbour(a)
+
+
 if __name__ == "__main__":
-    # islands_count = 10
     parser = argparse.ArgumentParser(description='Run experiment')
     parser.add_argument('islands_count', default=10, type=int)
     parser.add_argument('--show_plot', dest='show_plot', action='store_true')
@@ -65,6 +69,7 @@ if __name__ == "__main__":
     max_iter = 200
     epsilon = 0.01
     min_sd = abs(x_max - x_min) * epsilon
+    restart_probability = 0.1
 
     logger = logging.getLogger("islandsLogger")
     logger.setLevel(logging.INFO)
@@ -81,10 +86,16 @@ if __name__ == "__main__":
     diversity_logger.info("epoch,diversity")
 
     islands = [Island(toolbox, tools, population_size, i, logger) for i in range(islands_count)]
-    restart_probability = 0.1
+    controlIsland = Island(toolbox, tools, population_size, -1, logger) # normal evolution here
+
+    ## set up a topology
+    for i in range(islands_count -1):
+        make_connection_between_islands(islands[i], islands[i+1])
+    make_connection_between_islands(islands[0], islands[-1])
 
     start_time = time.perf_counter()
     for it in range(max_iter):
+        controlIsland.evolution_step()
         for island in islands:
             island.evolution_step()
 
