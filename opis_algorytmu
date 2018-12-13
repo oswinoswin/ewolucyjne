@@ -26,5 +26,5 @@ Komunikat
 
 2. Ewolucja
     - każda wyspa wykonuje jeden krok zwykłego algorytmu ewolucyjnego
-    - przeglądanie wiadomości w
-    - losowo (z określonym prawdopodobieństwem równym ???) wysyła komunikat do sąsiadów
+    - przeglądanie wiadomości w liście odebranych i restart (jeśli spełniono warunki restartu)
+    - losowo (z prawdopodobieństwem podanym jako parametr eksperymentu) wysyłanie komunikat do sąsiadów
