@@ -12,6 +12,9 @@ Warunki restartu:
     - wartość fitness na wyspie jest gorsza od wartości fitness w komunikacie
 
 
+Soft restart:
+    - pomnożenie współrzędnych każdego osobnika przez 0.3
+
 Komunikat
     - identyfikator wyspy, która go wysłała
     - wartość fitness
@@ -28,3 +31,6 @@ Komunikat
     - każda wyspa wykonuje jeden krok zwykłego algorytmu ewolucyjnego
     - przeglądanie wiadomości w liście odebranych i restart (jeśli spełniono warunki restartu)
     - losowo (z prawdopodobieństwem podanym jako parametr eksperymentu) wysyłanie komunikat do sąsiadów
+
+
+

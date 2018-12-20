@@ -20,7 +20,8 @@ class Message:
 
 
 class Island:
-    def __init__(self, toolbox, tools, population_size, id, min_time_between_restarts, message_sending_probability, default_ttl, min_angle):
+    def __init__(self, toolbox, tools, population_size, id, min_time_between_restarts, message_sending_probability,
+                 default_ttl, min_angle):
         self.min_angle = min_angle
         self.default_ttl = default_ttl
         self.message_sending_probability = message_sending_probability
@@ -50,6 +51,12 @@ class Island:
         #  restart params
         self.min_time_between_restarts = min_time_between_restarts
 
+    def move_population(self):
+        factor = 0.3
+        for i in range(len(self.pop)):
+            for j in range(len(self.pop[i])):
+                self.pop[i][j] = self.pop[i][j] * factor
+
     def prepare_logger(self):
         logger = logging.getLogger("islandsLogger{}".format(self.id))
         logger.setLevel(logging.INFO)
@@ -60,6 +67,10 @@ class Island:
 
     def restart_population(self):
         self.pop = self.toolbox.population(n=self.population_size)
+        self.last_restart_time = self.current_generation
+
+    def soft_restart_population(self):
+        self.move_population()
         self.last_restart_time = self.current_generation
 
     def evolution_step(self):
@@ -89,15 +100,16 @@ class Island:
                 self.message_buffer.remove(message)
                 continue
             if self.should_restart(message, time_since_restart, fitness):
-                self.restart_population()
+                self.soft_restart_population()
                 restarted = True
             else:
                 message.decrease_ttl()
                 self.send_to_all_neighbours(message)
             self.message_buffer.remove(message)
-            
+
         if self.current_generation > self.min_time_between_restarts and not restarted and np.random.rand() < self.message_sending_probability:
-            message = Message(self.id, self.current_generation, fitness, self.estimate_population_center(), diversity, self.default_ttl)
+            message = Message(self.id, self.current_generation, fitness, self.estimate_population_center(), diversity,
+                              self.default_ttl)
             self.send_to_all_neighbours(message)
 
     def receive_a_message(self, message):
@@ -149,7 +161,7 @@ class Island:
     def add_neighbour(self, neighbour):
         self.neighbours.append(neighbour)
 
-        
+
 def unit_vector(vector):
     return vector / np.linalg.norm(vector)
 

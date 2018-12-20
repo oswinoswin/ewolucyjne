@@ -47,7 +47,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     islands_count = args.islands_count
     max_iter = 700
-    min_time_between_restarts = 30
+    min_time_between_restarts = 50
+
     message_sending_probability = 0.3
     default_ttl = 5
     min_angle = np.pi/4
@@ -79,10 +80,14 @@ if __name__ == "__main__":
                 island.evolution_step()
                 # checking for stuff is in island
 
+            # migrate
+            if it % 50 == 0:
+                populations = [island.get_population() for island in islands]
+                tools.migRing(populations, k=1, selection=tools.selBest )
+
             positions = [island.estimate_position()[0] for island in islands]
             mean_position_std = np.std(positions)
             diversity_logger.info("{}, {}".format(it, mean_position_std))
-            print(("{}, {}".format(it, mean_position_std)))
 
         results = [island.get_results() for island in islands]
 
@@ -90,3 +95,12 @@ if __name__ == "__main__":
         duration = time.perf_counter() - start_time
 
         print("{0},{1:.4f},{2:.4f}".format(islands_count, duration, best_result))
+
+        #  restart islands for next iteration
+        for island in islands:
+            island.restart_population()
+            island.current_generation = 0
+            island.last_restart_time = 0
+
+        controlIsland.restart_population()
+        controlIsland.current_generation = 0
