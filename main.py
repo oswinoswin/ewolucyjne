@@ -64,8 +64,8 @@ if __name__ == "__main__":
     diversity_logger.addHandler(dfh)
     diversity_logger.info("epoch,diversity")
 
-    islands = [Island(toolbox, tools, population_size, i, min_time_between_restarts, message_sending_probability, default_ttl, min_angle) for i in range(islands_count)]
-    controlIsland = Island(toolbox, tools, population_size, -1, min_time_between_restarts, message_sending_probability, default_ttl, min_angle)  # normal evolution here
+    islands = [Island(toolbox, tools, population_size, i, min_time_between_restarts, message_sending_probability, default_ttl, min_angle, dimension) for i in range(islands_count)]
+    controlIsland = Island(toolbox, tools, population_size, -1, min_time_between_restarts, message_sending_probability, default_ttl, min_angle, dimension)  # normal evolution here
 
     ## set up a topology
     for i in range(islands_count -1):

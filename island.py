@@ -1,4 +1,5 @@
 import numpy as np
+import random
 from deap import algorithms
 import logging
 
@@ -21,7 +22,7 @@ class Message:
 
 class Island:
     def __init__(self, toolbox, tools, population_size, id, min_time_between_restarts, message_sending_probability,
-                 default_ttl, min_angle):
+                 default_ttl, min_angle, dimensions):
         self.min_angle = min_angle
         self.default_ttl = default_ttl
         self.message_sending_probability = message_sending_probability
@@ -45,6 +46,7 @@ class Island:
         self.logger.info("epoch,fitness,diversity,time_since_restart")
         self.neighbours = []
         self.avg_fitness = None
+        self.dimensions = dimensions
 
         self.message_buffer = []
 
@@ -52,10 +54,15 @@ class Island:
         self.min_time_between_restarts = min_time_between_restarts
 
     def move_population(self):
-        factor = 0.3
+        mov_factor = 0.1
+        mov_vec = np.random.rand(self.dimensions) * 2 - 1;
+        mov_vec *= mov_factor;
+        
+        spread_factor = 0.0
+        
         for i in range(len(self.pop)):
             for j in range(len(self.pop[i])):
-                self.pop[i][j] = self.pop[i][j] * factor
+                self.pop[i][j] = self.pop[i][j] + mov_vec[j] + (random.random()*2-1)*spread_factor;
 
     def prepare_logger(self):
         logger = logging.getLogger("islandsLogger{}".format(self.id))
