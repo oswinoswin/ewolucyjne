@@ -16,7 +16,7 @@ class Message:
         self.ttl = self.ttl - 1
 
     def __str__(self):
-        return f"MESSAGE sender: {self.sender}, epoch: {self.epoch}, fitness: {self.fitness}, div: {self.diversity}, ttl: {self.ttl}"
+        return "MESSAGE sender: {}, epoch: {}, fitness: {}, div: {}, ttl: {}".format(self.sender, self.epoch, self.fitness, self.diversity, self.ttl)
 
 
 class Island:
