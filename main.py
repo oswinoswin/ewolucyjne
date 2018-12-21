@@ -70,7 +70,7 @@ if __name__ == "__main__":
     ## set up a topology
     for i in range(islands_count -1):
         make_connection_between_islands(islands[i], islands[i+1])
-    make_connection_between_islands(islands[0], islands[-1])
+    make_connection_between_islands(islands[0], islands[islands_count-1])
 
     for rep in range(experiment_repetitions):
         start_time = time.perf_counter()
