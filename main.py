@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     diversity_logger = logging.getLogger("diversityLogger")
     diversity_logger.setLevel(logging.INFO)
-    dfh = logging.FileHandler("results/diversity.csv")
+    dfh = logging.FileHandler("results/diversity.csv", mode='w')
     dfh.setLevel(logging.INFO)
     diversity_logger.addHandler(dfh)
     diversity_logger.info("epoch,diversity")

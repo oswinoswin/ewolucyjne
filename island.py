@@ -60,7 +60,7 @@ class Island:
     def prepare_logger(self):
         logger = logging.getLogger("islandsLogger{}".format(self.id))
         logger.setLevel(logging.INFO)
-        fh = logging.FileHandler("results/islands/island_{}.csv".format(self.id))
+        fh = logging.FileHandler("results/islands/island_{}.csv".format(self.id), mode='w')
         fh.setLevel(logging.INFO)
         logger.addHandler(fh)
         return logger
