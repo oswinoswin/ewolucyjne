@@ -13,7 +13,7 @@ Warunki restartu:
 
 
 Soft restart:
-    - pomnożenie współrzędnych każdego osobnika przez 0.3
+    - wywołanie dodatkowej migracji (todo)
 
 Komunikat
     - identyfikator wyspy, która go wysłała

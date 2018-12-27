@@ -6,6 +6,9 @@ import argparse
 import time
 import logging
 
+# dodać większą mutację zamiast restartu (ile razy która wyspa się restartuje)
+# zwiększyć wymiar trochę
+# pobawić się przesunięciem
 
 from island import Island
 
@@ -42,7 +45,7 @@ def make_connection_between_islands(a, b):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
-    parser.add_argument('islands_count', default=10, type=int)
+    parser.add_argument('islands_count', default=5, type=int)
 
     args = parser.parse_args()
     islands_count = args.islands_count
@@ -68,11 +71,15 @@ if __name__ == "__main__":
     controlIsland = Island(toolbox, tools, population_size, -1, min_time_between_restarts, message_sending_probability, default_ttl, min_angle)  # normal evolution here
 
     ## set up a topology
-    for i in range(islands_count -1):
-        make_connection_between_islands(islands[i], islands[i+1])
-    make_connection_between_islands(islands[0], islands[-1])
+    # for i in range(islands_count -1):
+    #     make_connection_between_islands(islands[i], islands[i+1])
+    # make_connection_between_islands(islands[0], islands[-1])
 
-    for rep in range(experiment_repetitions):
+    # stat
+    for i in range(1, islands_count):
+        make_connection_between_islands(islands[0], islands[i])
+
+    for rep in range(2):
         start_time = time.perf_counter()
         for it in range(max_iter):
             controlIsland.evolution_step()

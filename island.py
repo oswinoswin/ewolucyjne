@@ -55,7 +55,7 @@ class Island:
         factor = 0.3
         for i in range(len(self.pop)):
             for j in range(len(self.pop[i])):
-                self.pop[i][j] = self.pop[i][j] * factor
+                self.pop[i][j] = self.pop[i][j]*2 + np.random.rand()
 
     def prepare_logger(self):
         logger = logging.getLogger("islandsLogger{}".format(self.id))
