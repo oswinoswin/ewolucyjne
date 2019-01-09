@@ -43,7 +43,7 @@ class Island:
         self.last_restart_time = 0
         self.id = id
         self.logger = self.prepare_logger()
-        self.logger.info("epoch,fitness,diversity,time_since_restart")
+        #self.logger.info("epoch,fitness,diversity,time_since_restart")
         self.neighbours = []
         self.avg_fitness = None
         self.dimensions = dimensions
@@ -75,6 +75,7 @@ class Island:
     def restart_population(self):
         self.pop = self.toolbox.population(n=self.population_size)
         self.last_restart_time = self.current_generation
+        self.hof.clear()
 
     def soft_restart_population(self):
         self.move_population()
@@ -96,7 +97,7 @@ class Island:
         self.current_generation += 1
         diversity = self.estimate_population_diversity()
         time_since_restart = self.time_since_restart()
-        fitness = avg[0]
+        fitness = self.toolbox.evaluate(self.hof[0])[0]
         self.avg_fitness = avg[0]
         self.logger.info("{},{},{},{}".format(self.current_generation, fitness, diversity, time_since_restart))
 
