@@ -9,7 +9,7 @@ import logging
 
 from island import Island
 
-dimension = 30
+dimension = 100
 population_size = 50
 x_min, x_max = -5.12, 5.12
 
@@ -46,13 +46,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     islands_count = args.islands_count
-    max_iter = 700
-    min_time_between_restarts = 50
+    max_iter = 500
+    min_time_between_restarts = 5
 
-    message_sending_probability = 0.3
-    default_ttl = 5
+    message_sending_probability = 0.01
+    default_ttl = 1
     min_angle = np.pi/4
-    experiment_repetitions = 5
+    experiment_repetitions = 10
 
     print("islands: {} epochs: {}, min_time_between_restarts: {}\n"
           "message_sending_probability: {}, message_ttl: {}, similarity: {}".format(islands_count, max_iter, min_time_between_restarts, message_sending_probability, default_ttl,min_angle))
@@ -69,8 +69,9 @@ if __name__ == "__main__":
 
     ## set up a topology
     for i in range(islands_count -1):
-        make_connection_between_islands(islands[i], islands[i+1])
-    make_connection_between_islands(islands[0], islands[islands_count-1])
+    	for j in range(islands_count-1):
+    		if i != j:
+        		make_connection_between_islands(islands[i], islands[j])
 
     for rep in range(experiment_repetitions):
         start_time = time.perf_counter()
@@ -81,7 +82,8 @@ if __name__ == "__main__":
                 # checking for stuff is in island
 
             # migrate
-            if it % 50 == 0:
+            migration_factor = 0.3
+            if np.random.rand() < migration_factor:
                 populations = [island.get_population() for island in islands]
                 tools.migRing(populations, k=1, selection=tools.selBest )
 
