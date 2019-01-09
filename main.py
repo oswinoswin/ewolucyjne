@@ -6,6 +6,9 @@ import argparse
 import time
 import logging
 
+# dodać większą mutację zamiast restartu (ile razy która wyspa się restartuje)
+# zwiększyć wymiar trochę
+# pobawić się przesunięciem
 
 from island import Island
 
@@ -42,7 +45,7 @@ def make_connection_between_islands(a, b):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
-    parser.add_argument('islands_count', default=10, type=int)
+    parser.add_argument('islands_count', default=5, type=int)
 
     args = parser.parse_args()
     islands_count = args.islands_count

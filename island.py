@@ -54,15 +54,10 @@ class Island:
         self.min_time_between_restarts = min_time_between_restarts
 
     def move_population(self):
-        mov_factor = 0.1
-        mov_vec = np.random.rand(self.dimensions) * 2 - 1;
-        mov_vec *= mov_factor;
-        
-        spread_factor = 0.0
-        
-        for i in range(len(self.pop)):
-            for j in range(len(self.pop[i])):
-                self.pop[i][j] = self.pop[i][j] + mov_vec[j] + (random.random()*2-1)*spread_factor;
+        inividual_to_mutate = np.random.randint(self.population_size)
+        self.pop[inividual_to_mutate] = self.toolbox.mutate(self.pop[inividual_to_mutate])[0]
+        print(self.pop[inividual_to_mutate])
+
 
     def prepare_logger(self):
         logger = logging.getLogger("islandsLogger{}".format(self.id))
