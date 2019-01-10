@@ -30,7 +30,7 @@ if per_island_plot == True:
 
 	islands = {}
 
-	for num in range(-1, islands_count):
+	for num in range(0, 2*islands_count):
 		with open('results/islands/island_' + str(num) + '.csv') as f:
 			reader = csv.reader(f, delimiter=',')
 			islands[num] = []
@@ -53,7 +53,7 @@ if per_island_plot == True:
 
 	ax.grid()
 
-	for num in range(-1, islands_count):
+	for num in range(0, 2*islands_count):
 		if feature_plotted == Feature.fitness:
 			ax.plot(islands[num][:,1], label='Island ' + str(num))
 		if feature_plotted == Feature.diversity:
@@ -70,7 +70,7 @@ else:
 	
 	islands = OrderedDict()
 
-	for num in range(0, islands_count):
+	for num in range(islands_count, 2*islands_count):
 		with open('results/islands/island_' + str(num) + '.csv') as f:
 			reader = csv.reader(f, delimiter=',')
 			for row in reader:
@@ -104,16 +104,17 @@ else:
 	lbounds = np.array(lbounds, dtype=np.float64)
 	ubounds = np.array(ubounds, dtype=np.float64)
 
-	# control island
+	# control islands
 	
 	islands = OrderedDict()
 	
-	with open('results/islands/island_' + str(-1) + '.csv') as f:
-		reader = csv.reader(f, delimiter=',')
-		for row in reader:
-			if not row[0] in islands:
-				islands[row[0]] = []
-			islands[row[0]] += [row]
+	for num in range(0, islands_count):
+		with open('results/islands/island_' + str(num) + '.csv') as f:
+			reader = csv.reader(f, delimiter=',')
+			for row in reader:
+				if not row[0] in islands:
+					islands[row[0]] = []
+				islands[row[0]] += [row]
 
 	islands_copy = islands
 	islands = OrderedDict()
