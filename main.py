@@ -12,9 +12,21 @@ import logging
 
 from island import Island
 
-dimension = 100
+dimension = 50
 population_size = 50
 x_min, x_max = -5.12, 5.12
+
+gene_mutation_probability = 0.3
+gaussian_mutation_sigma = 0.01
+
+max_iter = 500
+min_time_between_restarts = 1
+message_sending_probability = 0.02
+default_ttl = 1
+min_angle = np.pi/8
+experiment_repetitions = 5
+
+migration_probability = 0.3
 
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMin)
@@ -25,7 +37,7 @@ toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.att
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("evaluate", rastrigin)
 toolbox.register("mate", tools.cxTwoPoint)
-toolbox.register("mutate", tools.mutFlipBit, indpb=0.10)
+toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=gaussian_mutation_sigma, indpb=gene_mutation_probability)
 toolbox.register("select", tools.selTournament, tournsize=3)
 
 
@@ -49,13 +61,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     islands_count = args.islands_count
-    max_iter = 500
-    min_time_between_restarts = 5
-
-    message_sending_probability = 0.01
-    default_ttl = 1
-    min_angle = np.pi/4
-    experiment_repetitions = 10
+    
 
     print("islands: {} epochs: {}, min_time_between_restarts: {}\n"
           "message_sending_probability: {}, message_ttl: {}, similarity: {}".format(islands_count, max_iter, min_time_between_restarts, message_sending_probability, default_ttl,min_angle))
@@ -67,8 +73,8 @@ if __name__ == "__main__":
     diversity_logger.addHandler(dfh)
     diversity_logger.info("epoch,diversity")
 
-    islands = [Island(toolbox, tools, population_size, i, min_time_between_restarts, message_sending_probability, default_ttl, min_angle, dimension) for i in range(islands_count)]
-    controlIsland = Island(toolbox, tools, population_size, -1, min_time_between_restarts, message_sending_probability, default_ttl, min_angle, dimension)  # normal evolution here
+    controlIslands = [Island(toolbox, tools, population_size, i, min_time_between_restarts, message_sending_probability, default_ttl, min_angle, dimension) for i in range(islands_count)]
+    islands = [Island(toolbox, tools, population_size, i+islands_count, min_time_between_restarts, message_sending_probability, default_ttl, min_angle, dimension) for i in range(islands_count)]
 
     ## set up a topology
     for i in range(islands_count -1):
@@ -79,14 +85,18 @@ if __name__ == "__main__":
     for rep in range(experiment_repetitions):
         start_time = time.perf_counter()
         for it in range(max_iter):
-            controlIsland.evolution_step()
+        
+            for island in controlIslands:
+                island.evolution_step()
+            
             for island in islands:
                 island.evolution_step()
-                # checking for stuff is in island
 
-            # migrate
-            migration_factor = 0.3
-            if np.random.rand() < migration_factor:
+            # migrate 
+            if np.random.rand() < migration_probability:
+                populations = [island.get_population() for island in controlIslands]
+                tools.migRing(populations, k=1, selection=tools.selBest )
+                
                 populations = [island.get_population() for island in islands]
                 tools.migRing(populations, k=1, selection=tools.selBest )
 
@@ -107,5 +117,6 @@ if __name__ == "__main__":
             island.current_generation = 0
             island.last_restart_time = 0
 
-        controlIsland.restart_population()
-        controlIsland.current_generation = 0
+        for island in controlIslands:
+            island.restart_population()
+            island.current_generation = 0

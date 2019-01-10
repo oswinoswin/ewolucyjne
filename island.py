@@ -4,6 +4,9 @@ from deap import algorithms
 import logging
 
 
+individual_soft_restart_probability = 1.0
+soft_restart_sigma = 0.04
+
 class Message:
     def __init__(self, sender, epoch, fitness, position, diversity, ttl):
         self.sender = sender
@@ -54,9 +57,9 @@ class Island:
         self.min_time_between_restarts = min_time_between_restarts
 
     def move_population(self):
-        inividual_to_mutate = np.random.randint(self.population_size)
-        self.pop[inividual_to_mutate] = self.toolbox.mutate(self.pop[inividual_to_mutate])[0]
-        print(self.pop[inividual_to_mutate])
+        for i in range(0, self.population_size):
+            if np.random.rand() < individual_soft_restart_probability:
+                self.pop[i] = self.toolbox.mutate(self.pop[i], sigma=soft_restart_sigma)[0]
 
 
     def prepare_logger(self):
