@@ -6,10 +6,6 @@ import argparse
 import time
 import logging
 
-# dodać większą mutację zamiast restartu (ile razy która wyspa się restartuje)
-# zwiększyć wymiar trochę
-# pobawić się przesunięciem
-
 from island import Island
 
 dimension = 50
@@ -20,11 +16,11 @@ gene_mutation_probability = 0.3
 gaussian_mutation_sigma = 0.01
 
 max_iter = 500
-min_time_between_restarts = 1
+min_time_between_restarts = 70
 message_sending_probability = 0.02
 default_ttl = 1
-min_angle = np.pi/8
-experiment_repetitions = 5
+min_angle = np.pi / 8
+experiment_repetitions = 1
 
 migration_probability = 0.3
 
@@ -55,16 +51,37 @@ def make_connection_between_islands(a, b):
     b.add_neighbour(a)
 
 
+def make_topology(type, islands, islands_count):
+    if type == "ring":
+        for i in range(islands_count):
+            make_connection_between_islands(islands[i], islands[i+1])
+        make_connection_between_islands(islands[0], islands[-1])
+
+    if type == "star":
+        for i in range(1, islands_count):
+            make_connection_between_islands(islands[0], islands[i])
+
+    if type == "clique":
+        for i in range(islands_count):
+            for j in range(islands_count):
+                if i != j:
+                    make_connection_between_islands(islands[i], islands[j])
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
     parser.add_argument('islands_count', default=5, type=int)
+    parser.add_argument('--topology', default='star')
 
     args = parser.parse_args()
     islands_count = args.islands_count
-    
+    topology = args.topology
 
     print("islands: {} epochs: {}, min_time_between_restarts: {}\n"
-          "message_sending_probability: {}, message_ttl: {}, similarity: {}".format(islands_count, max_iter, min_time_between_restarts, message_sending_probability, default_ttl,min_angle))
+          "message_sending_probability: {}, message_ttl: {}, similarity: {}".format(islands_count, max_iter,
+                                                                                    min_time_between_restarts,
+                                                                                    message_sending_probability,
+                                                                                    default_ttl, min_angle))
 
     diversity_logger = logging.getLogger("diversityLogger")
     diversity_logger.setLevel(logging.INFO)
@@ -73,32 +90,31 @@ if __name__ == "__main__":
     diversity_logger.addHandler(dfh)
     diversity_logger.info("epoch,diversity")
 
-    controlIslands = [Island(toolbox, tools, population_size, i, min_time_between_restarts, message_sending_probability, default_ttl, min_angle, dimension) for i in range(islands_count)]
-    islands = [Island(toolbox, tools, population_size, i+islands_count, min_time_between_restarts, message_sending_probability, default_ttl, min_angle, dimension) for i in range(islands_count)]
+    controlIslands = [
+        Island(toolbox, tools, population_size, i, min_time_between_restarts, message_sending_probability, default_ttl,
+               min_angle, dimension) for i in range(islands_count)]
+    islands = [Island(toolbox, tools, population_size, i + islands_count, min_time_between_restarts,
+                      message_sending_probability, default_ttl, min_angle, dimension) for i in range(islands_count)]
 
-    ## set up a topology
-    for i in range(islands_count -1):
-    	for j in range(islands_count-1):
-    		if i != j:
-        		make_connection_between_islands(islands[i], islands[j])
+    make_topology(topology, islands, islands_count)
 
     for rep in range(experiment_repetitions):
         start_time = time.perf_counter()
         for it in range(max_iter):
-        
+
             for island in controlIslands:
                 island.evolution_step()
-            
+
             for island in islands:
                 island.evolution_step()
 
             # migrate 
             if np.random.rand() < migration_probability:
                 populations = [island.get_population() for island in controlIslands]
-                tools.migRing(populations, k=1, selection=tools.selBest )
-                
+                tools.migRing(populations, k=1, selection=tools.selBest)
+
                 populations = [island.get_population() for island in islands]
-                tools.migRing(populations, k=1, selection=tools.selBest )
+                tools.migRing(populations, k=1, selection=tools.selBest)
 
             positions = [island.estimate_position()[0] for island in islands]
             mean_position_std = np.std(positions)
