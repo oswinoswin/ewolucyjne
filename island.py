@@ -3,9 +3,9 @@ import random
 from deap import algorithms
 import logging
 
-
 individual_soft_restart_probability = 1.0
 soft_restart_sigma = 0.04
+
 
 class Message:
     def __init__(self, sender, epoch, fitness, position, diversity, ttl):
@@ -20,12 +20,14 @@ class Message:
         self.ttl = self.ttl - 1
 
     def __str__(self):
-        return "MESSAGE sender: {}, epoch: {}, fitness: {}, div: {}, ttl: {}".format(self.sender, self.epoch, self.fitness, self.diversity, self.ttl)
+        return "MESSAGE sender: {}, epoch: {}, fitness: {}, div: {}, ttl: {}".format(self.sender, self.epoch,
+                                                                                     self.fitness, self.diversity,
+                                                                                     self.ttl)
 
 
 class Island:
     def __init__(self, toolbox, tools, population_size, id, min_time_between_restarts, message_sending_probability,
-                 default_ttl, min_angle, dimensions):
+                 default_ttl, min_angle, dimensions, x_min, x_max):
         self.min_angle = min_angle
         self.default_ttl = default_ttl
         self.message_sending_probability = message_sending_probability
@@ -46,7 +48,7 @@ class Island:
         self.last_restart_time = 0
         self.id = id
         self.logger = self.prepare_logger()
-        #self.logger.info("epoch,fitness,diversity,time_since_restart")
+        # self.logger.info("epoch,fitness,diversity,time_since_restart")
         self.neighbours = []
         self.avg_fitness = None
         self.dimensions = dimensions
@@ -55,12 +57,13 @@ class Island:
 
         #  restart params
         self.min_time_between_restarts = min_time_between_restarts
+        self.x_min = x_min
+        self.x_max = x_max
 
     def move_population(self):
         for i in range(0, self.population_size):
             if np.random.rand() < individual_soft_restart_probability:
                 self.pop[i] = self.toolbox.mutate(self.pop[i], sigma=soft_restart_sigma)[0]
-
 
     def prepare_logger(self):
         logger = logging.getLogger("islandsLogger{}".format(self.id))
@@ -78,6 +81,14 @@ class Island:
     def soft_restart_population(self):
         self.move_population()
         self.last_restart_time = self.current_generation
+
+    def cut_values_outside_range(self):
+        for i in range(0, self.population_size):
+            for j, _ in enumerate(self.pop[i]):
+                if self.pop[i][j] > self.x_max:
+                    self.pop[i][j] = self.x_max
+                if self.pop[i][j] < self.x_min:
+                    self.pop[i][j] = self.x_min
 
     def evolution_step(self):
         self.pop, logbook = algorithms.eaSimple(self.pop, self.toolbox, cxpb=0.5, mutpb=0.2, ngen=1, stats=self.stats,
@@ -117,6 +128,7 @@ class Island:
             message = Message(self.id, self.current_generation, fitness, self.estimate_population_center(), diversity,
                               self.default_ttl)
             self.send_to_all_neighbours(message)
+        self.cut_values_outside_range()
 
     def receive_a_message(self, message):
         self.message_buffer.append(message)

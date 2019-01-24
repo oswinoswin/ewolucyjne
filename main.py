@@ -32,9 +32,11 @@ toolbox.register("attr_bool", random.uniform, x_min, x_max)
 toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_bool, n=dimension)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("evaluate", rastrigin)
-toolbox.register("mate", tools.cxTwoPoint)
+toolbox.register("mate", tools.cxSimulatedBinaryBounded, eta=5, low=x_min, up=x_max)
 toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=gaussian_mutation_sigma, indpb=gene_mutation_probability)
 toolbox.register("select", tools.selTournament, tournsize=3)
+toolbox.register("selectMig", tools.selRandom)
+toolbox.register("selectRepl", random.sample)
 
 
 def islands_too_close(a, b):
@@ -92,9 +94,9 @@ if __name__ == "__main__":
 
     controlIslands = [
         Island(toolbox, tools, population_size, i, min_time_between_restarts, message_sending_probability, default_ttl,
-               min_angle, dimension) for i in range(islands_count)]
+               min_angle, dimension, x_min, x_max) for i in range(islands_count)]
     islands = [Island(toolbox, tools, population_size, i + islands_count, min_time_between_restarts,
-                      message_sending_probability, default_ttl, min_angle, dimension) for i in range(islands_count)]
+                      message_sending_probability, default_ttl, min_angle, dimension, x_min, x_max) for i in range(islands_count)]
 
     make_topology(topology, islands, islands_count)
 
@@ -111,10 +113,10 @@ if __name__ == "__main__":
             # migrate 
             if np.random.rand() < migration_probability:
                 populations = [island.get_population() for island in controlIslands]
-                tools.migRing(populations, k=1, selection=tools.selBest)
+                tools.migRing(populations, k=3, selection=toolbox.selectMig, replacement=toolbox.selectRepl)
 
                 populations = [island.get_population() for island in islands]
-                tools.migRing(populations, k=1, selection=tools.selBest)
+                tools.migRing(populations, k=3, selection=toolbox.selectMig, replacement=toolbox.selectRepl)
 
             positions = [island.estimate_position()[0] for island in islands]
             mean_position_std = np.std(positions)
