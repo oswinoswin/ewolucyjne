@@ -19,12 +19,14 @@ parser.add_argument('islands_count', default=10, type=int, help='Count of island
 parser.add_argument('feature_plotted', type=Feature, choices=list(Feature), help='Type of feature to be plotted')
 parser.add_argument('-l', '--log', action='store_true', required=False, help='Plot Y axis in logarithmic scale')
 parser.add_argument('-i', '--per-island', action='store_true', required=False, help="Plot diagrams on per-island basis instead of one averaged")
+parser.add_argument('-o', '--output-file', required=False, help='Output file name')
 
 args = parser.parse_args()
 islands_count = args.islands_count
 feature_plotted = args.feature_plotted
 logarithmic_scale = args.log
 per_island_plot = args.per_island
+output_file = args.output_file
 
 if per_island_plot == True:
 
@@ -62,7 +64,11 @@ if per_island_plot == True:
 	box = ax.get_position()
 	ax.set_position([box.x0, box.y0, box.width*0.9, box.height])
 	ax.legend(loc='center left', bbox_to_anchor=(1,0.5))
-	plt.show()
+	
+	if output_file == None:
+		plt.show()
+	else:
+		fig.savefig(output_file + '.png')
 	
 else:
 
@@ -142,7 +148,7 @@ else:
 	control_lbounds = np.array(control_lbounds, dtype=np.float64)
 	control_ubounds = np.array(control_ubounds, dtype=np.float64)
 	
-	fig, ax = plt.subplots()
+	fig, ax = plt.subplots(figsize=(12,8))
 
 	ax.set(xlabel='generation')
 	if feature_plotted == Feature.fitness:
@@ -155,21 +161,41 @@ else:
 	if logarithmic_scale == True:
 		ax.set_yscale('log')
 
+	plt.xlim(0,1500)
+	
+	if feature_plotted == Feature.fitness:
+		plt.ylim(0.000001,1000)
+	if feature_plotted == Feature.diversity:
+		plt.ylim(0.00001,10)
+
 	ax.grid()
 	
-	ax.plot(control_lbounds, label='Control island lower bound')
-	ax.plot(control_ubounds, label='Control island upper bound')
+	# control islands
+	ax.plot(control_lbounds, label='Control lower bound')
+	
+	if feature_plotted == Feature.fitness:
+		ax.plot(control_means, label='Control mean best fitness')
+	if feature_plotted == Feature.diversity:
+		ax.plot(control_means, label='Control mean diversity')
+		
+	ax.plot(control_ubounds, label='Control upper bound')
+	
+	# test islands
 	ax.plot(lbounds, label='Lower bound')
-	ax.plot(ubounds, label='Upper bound')
 	
 	if feature_plotted == Feature.fitness:
 		ax.plot(means, label='Mean best fitness')
-		ax.plot(control_means, label='Control island mean best fitness')
 	if feature_plotted == Feature.diversity:
 		ax.plot(means, label='Mean diversity')
-		ax.plot(control_means, label='Control island mean diversity')
+		
+	ax.plot(ubounds, label='Upper bound')
+	
 
 	box = ax.get_position()
 	ax.set_position([box.x0, box.y0, box.width*0.9, box.height])
 	ax.legend(loc='center left', bbox_to_anchor=(1,0.5))
-	plt.show()
+	
+	if output_file == None:
+		plt.show()
+	else:
+		fig.savefig(output_file + '.png')
