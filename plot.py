@@ -40,7 +40,7 @@ if per_island_plot == True:
 				islands[num] += [row]
 			islands[num] = np.array(islands[num][1:], dtype=np.float64)
 
-	fig, ax = plt.subplots()
+	fig, ax = plt.subplots(figsize=(12,8))
 
 	ax.set(xlabel='generation')
 	if feature_plotted == Feature.fitness:
@@ -52,6 +52,11 @@ if per_island_plot == True:
 
 	if logarithmic_scale == True:
 		ax.set_yscale('log')
+		
+	if feature_plotted == Feature.fitness:
+		plt.ylim(0.000001,1000)
+	if feature_plotted == Feature.diversity:
+		plt.ylim(0.00001,10)
 
 	ax.grid()
 
