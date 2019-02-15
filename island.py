@@ -3,6 +3,9 @@ import random
 from deap import algorithms
 import logging
 
+x_min, x_max = -5.12, 5.12
+
+
 class Message:
     def __init__(self, sender, epoch, fitness, position, diversity, ttl):
         self.sender = sender
@@ -45,7 +48,7 @@ class Island:
         self.last_restart_time = 0
         self.id = id
         self.logger = self.prepare_logger()
-        # self.logger.info("epoch,fitness,diversity,time_since_restart")
+        self.logger.info("epoch,fitness,diversity,time_since_restart")
         self.neighbours = []
         self.avg_fitness = None
         self.dimensions = dimensions

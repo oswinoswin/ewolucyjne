@@ -5,27 +5,48 @@ import numpy as np
 import argparse
 import time
 import logging
-
+from collections import Sequence
 from island import Island
+from itertools import repeat
+import math
+
+def mutUniform(individual, low, up, indpb):
+    size = len(individual)
+    if not isinstance(low, Sequence):
+        low = repeat(low, size)
+    elif len(low) < size:
+        raise IndexError("mu must be at least the size of individual: %d < %d" % (len(low), size))
+    if not isinstance(up, Sequence):
+        up = repeat(up, size)
+    elif len(up) < size:
+        raise IndexError("sigma must be at least the size of individual: %d < %d" % (len(sigma), size))
+
+    for i, l, u in zip(range(size), low, up):
+        if random.random() < indpb:
+            individual[i] += random.uniform(l, u)
+
+    return individual,
 
 dimension = 50
-population_size = 50
+population_size = 100
 x_min, x_max = -5.12, 5.12
+
 
 mutation_probability = 0.4
 crossover_probability = 0.7
 gene_mutation_probability = 1.0 / dimension
 gaussian_mutation_sigma = 4.0
 migration_probability = 0.2
-
 min_time_between_restarts = 70
 message_sending_probability = 0.0
 message_ttl = 1
 min_angle = np.pi / 8
+
 individual_soft_restart_probability = 1.0
 soft_restart_sigma = gaussian_mutation_sigma
 
 max_iter = 1500
+
 experiment_repetitions = 5
 
 
@@ -38,7 +59,7 @@ toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.att
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("evaluate", rastrigin)
 toolbox.register("mate", tools.cxSimulatedBinaryBounded, eta=5, low=x_min, up=x_max)
-toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=gaussian_mutation_sigma, indpb=gene_mutation_probability)
+toolbox.register("mutate", mutUniform, low=x_min, up=x_max, indpb=gene_mutation_probability)
 toolbox.register("select", tools.selTournament, tournsize=3)
 toolbox.register("selectMig", tools.selRandom)
 toolbox.register("selectRepl", random.sample)
@@ -63,7 +84,7 @@ def print_neighbours():
 
 def make_topology(type, islands, islands_count):
     if type == "ring":
-        for i in range(islands_count):
+        for i in range(islands_count-1):
             make_connection_between_islands(islands[i], islands[i+1])
         make_connection_between_islands(islands[0], islands[-1])
         return
