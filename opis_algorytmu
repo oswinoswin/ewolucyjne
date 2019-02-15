@@ -1,0 +1,36 @@
+Wyspa
+    - zawiera jedną populację (o licznośći określonej przez parametr eksperymentu)
+    - zawiera listę swoich sąsiadów którym przekazuje komunikaty
+    - po otrzymaniu komunikatu sprawdza, czy spełnione są warunki na restart
+        - jeśli tak, restartuje ewolucję i usuwa komunikat z listy odebranych komunikatów
+        - jeśli nie, przekazuje komunikat do swoich sąsiadów
+
+
+Warunki restartu:
+    - ilość epok od ostatniego restartu jest większa od ustalonego parametru
+    - różnorodność populacji (odchylenie standardowe) jest mniejsza, od wartości odchylenia w otrzymanym komunikacie
+    - wartość fitness na wyspie jest gorsza od wartości fitness w komunikacie
+
+
+Soft restart:
+    - wywołanie dodatkowej migracji (todo)
+
+Komunikat
+    - identyfikator wyspy, która go wysłała
+    - wartość fitness
+    - nr epoki
+    - odchylenie standardowe na wyspie
+
+
+
+1. Przygotowanie:
+    - Zainicjowanie wysp
+    - Stworzenie topologii (podanie każdej wyspie listy sąsiadów)
+
+2. Ewolucja
+    - każda wyspa wykonuje jeden krok zwykłego algorytmu ewolucyjnego
+    - przeglądanie wiadomości w liście odebranych i restart (jeśli spełniono warunki restartu)
+    - losowo (z prawdopodobieństwem podanym jako parametr eksperymentu) wysyłanie komunikat do sąsiadów
+
+
+
