@@ -3,9 +3,8 @@ import random
 from deap import algorithms
 import logging
 
-individual_soft_restart_probability = 1.0
-soft_restart_sigma = 0.04
 x_min, x_max = -5.12, 5.12
+
 
 class Message:
     def __init__(self, sender, epoch, fitness, position, diversity, ttl):
@@ -27,7 +26,8 @@ class Message:
 
 class Island:
     def __init__(self, toolbox, tools, population_size, id, min_time_between_restarts, message_sending_probability,
-                 default_ttl, min_angle, dimensions, x_min, x_max):
+                 default_ttl, min_angle, dimensions, x_min, x_max, mutation_probability, crossover_probability,
+                 individual_soft_restart_probability, soft_restart_sigma):
         self.min_angle = min_angle
         self.default_ttl = default_ttl
         self.message_sending_probability = message_sending_probability
@@ -52,6 +52,10 @@ class Island:
         self.neighbours = []
         self.avg_fitness = None
         self.dimensions = dimensions
+        self.mutation_probability = mutation_probability
+        self.crossover_probability = crossover_probability
+        self.individual_soft_restart_probability = individual_soft_restart_probability
+        self.soft_restart_sigma = soft_restart_sigma
 
         self.message_buffer = []
 
@@ -62,8 +66,8 @@ class Island:
 
     def move_population(self):
         for i in range(0, self.population_size):
-            if np.random.rand() < individual_soft_restart_probability:
-                self.pop[i] = self.toolbox.mutate(self.pop[i],low=x_min, up=x_max, indpb=soft_restart_sigma)[0]
+            if np.random.rand() < self.individual_soft_restart_probability:
+                self.pop[i] = self.toolbox.mutate(self.pop[i], sigma=self.soft_restart_sigma)[0]
 
     def prepare_logger(self):
         logger = logging.getLogger("islandsLogger{}".format(self.id))
@@ -91,7 +95,12 @@ class Island:
                     self.pop[i][j] = self.x_min
 
     def evolution_step(self):
-        self.pop, logbook = algorithms.eaSimple(self.pop, self.toolbox, cxpb=0.5, mutpb=0.5, ngen=1, stats=self.stats,
+        self.pop, logbook = algorithms.eaSimple(self.pop, 
+                                                self.toolbox, 
+                                                cxpb=self.crossover_probability, 
+                                                mutpb=self.mutation_probability, 
+                                                ngen=1, 
+                                                stats=self.stats,
                                                 halloffame=self.hof,
                                                 verbose=False)
         avg, min_, max_ = logbook.select("avg", "min", "max")
@@ -178,6 +187,9 @@ class Island:
 
     def add_neighbour(self, neighbour):
         self.neighbours.append(neighbour)
+        
+    def get_neighbours(self):
+    	return self.neighbours
 
 
 def unit_vector(vector):

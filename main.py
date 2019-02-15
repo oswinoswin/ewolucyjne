@@ -31,17 +31,24 @@ dimension = 50
 population_size = 100
 x_min, x_max = -5.12, 5.12
 
-gene_mutation_probability = 0.1
-gaussian_mutation_sigma = 0.01
+
+mutation_probability = 0.4
+crossover_probability = 0.7
+gene_mutation_probability = 1.0 / dimension
+gaussian_mutation_sigma = 4.0
+migration_probability = 0.2
+min_time_between_restarts = 70
+message_sending_probability = 0.0
+message_ttl = 1
+min_angle = np.pi / 8
+
+individual_soft_restart_probability = 1.0
+soft_restart_sigma = gaussian_mutation_sigma
 
 max_iter = 1500
-min_time_between_restarts = 70
-message_sending_probability = 0.02
-default_ttl = 1
-min_angle = np.pi / 8
+
 experiment_repetitions = 5
 
-migration_probability = 0.3
 
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 creator.create("Individual", list, fitness=creator.FitnessMin)
@@ -71,38 +78,81 @@ def make_connection_between_islands(a, b):
     a.add_neighbour(b)
     b.add_neighbour(a)
 
+def print_neighbours():
+    for i in range(islands_count):
+        print(str(islands[i].id) + ': ' + str([isl.id for isl in islands[i].get_neighbours()]))
 
 def make_topology(type, islands, islands_count):
     if type == "ring":
         for i in range(islands_count-1):
             make_connection_between_islands(islands[i], islands[i+1])
         make_connection_between_islands(islands[0], islands[-1])
+        return
 
     if type == "star":
         for i in range(1, islands_count):
             make_connection_between_islands(islands[0], islands[i])
+        return
 
     if type == "clique":
         for i in range(islands_count):
             for j in range(islands_count):
                 if i != j:
                     make_connection_between_islands(islands[i], islands[j])
+        return
 
+    if type == "torus":
+        width = int(np.sqrt(islands_count))
+        height = int(np.ceil(islands_count / width))
+        #print('width: ' + str(width))
+        #print('height: ' + str(height))
+        for i in range(islands_count):
+            row = int(i / width)
+            col = int(i % width)
+            if i >= islands_count - (islands_count % width):
+                make_connection_between_islands(islands[i], islands[row*width + (col+1)%(islands_count % width)])
+                make_connection_between_islands(islands[i], islands[((row+1) % height)*width + col])
+            else:
+                make_connection_between_islands(islands[i], islands[row*width + (col+1)%width])
+                if islands_count % width == 0 or col < islands_count % width:
+                    make_connection_between_islands(islands[i], islands[((row+1) % height)*width + col])
+                else:
+                    make_connection_between_islands(islands[i], islands[((row+1) % (height-1))*width + col])
+        return
+    
+    raise(Exception("Unknown topology"))
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run experiment')
     parser.add_argument('islands_count', default=5, type=int)
     parser.add_argument('--topology', default='star')
+    parser.add_argument('-mtbr', default=min_time_between_restarts, type=int, help='Minimal time between restarts')
+    parser.add_argument('-msp', default=message_sending_probability, type=float, help='Message sending probability')
+    parser.add_argument('-ttl', default=message_ttl, type=int, help='Message ttl')
+    parser.add_argument('-ma', default=min_angle, type=float, help='Minimal angle between islands')
+    parser.add_argument('-isrp', default=individual_soft_restart_probability, type=float, help='Individual soft restart probability')
+    parser.add_argument('-srs', default=soft_restart_sigma, type=float, help='Soft restart sigma')
+    
 
     args = parser.parse_args()
     islands_count = args.islands_count
     topology = args.topology
+    min_time_between_restarts = args.mtbr
+    message_sending_probability = args.msp
+    message_ttl = args.ttl
+    min_angle = args.ma
+    individual_soft_restart_probability = args.isrp
+    soft_restart_sigma = args.srs
 
-    print("islands: {} epochs: {}, min_time_between_restarts: {}\n"
-          "message_sending_probability: {}, message_ttl: {}, similarity: {}".format(islands_count, max_iter,
-                                                                                    min_time_between_restarts,
-                                                                                    message_sending_probability,
-                                                                                    default_ttl, min_angle))
+    print("islands: {} epochs: {}, topology: {}, min_time_between_restarts: {}\n"
+          "message_sending_probability: {}, message_ttl: {}, min_angle: {}\n"
+          "individual_soft_restart_probability: {}, soft_restart_sigma: {}".format(islands_count, max_iter, topology,
+                                                                                   min_time_between_restarts,
+                                                                                   message_sending_probability,
+                                                                                   message_ttl, min_angle,
+                                                                                   individual_soft_restart_probability,
+                                                                                   soft_restart_sigma))
 
     diversity_logger = logging.getLogger("diversityLogger")
     diversity_logger.setLevel(logging.INFO)
@@ -111,13 +161,16 @@ if __name__ == "__main__":
     diversity_logger.addHandler(dfh)
     diversity_logger.info("epoch,diversity")
 
-    controlIslands = [
-        Island(toolbox, tools, population_size, i, min_time_between_restarts, message_sending_probability, default_ttl,
-               min_angle, dimension, x_min, x_max) for i in range(islands_count)]
-    islands = [Island(toolbox, tools, population_size, i + islands_count, min_time_between_restarts,
-                      message_sending_probability, default_ttl, min_angle, dimension, x_min, x_max) for i in range(islands_count)]
+    controlIslands = [Island(toolbox, tools, population_size, i, min_time_between_restarts, 0, message_ttl,
+                             min_angle, dimension, x_min, x_max, mutation_probability, crossover_probability, 
+                             individual_soft_restart_probability, soft_restart_sigma) for i in range(islands_count)]
+               
+    islands = [Island(toolbox, tools, population_size, i + islands_count, min_time_between_restarts, message_sending_probability,
+                      message_ttl, min_angle, dimension, x_min, x_max, mutation_probability, crossover_probability,
+                      individual_soft_restart_probability, soft_restart_sigma) for i in range(islands_count)]
 
     make_topology(topology, islands, islands_count)
+    #print_neighbours()
 
     for rep in range(experiment_repetitions):
         start_time = time.perf_counter()
